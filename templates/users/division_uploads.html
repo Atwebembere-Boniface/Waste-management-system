@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="padding: 30px; background-color: #f8f9fa; min-height: 100vh;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+        <div>
+            <h2 style="color: #2e7d32; margin: 0;">
+                Waste Uploads: {{ division|title }}
+            </h2>
+            <p style="margin: 5px 0 0 0; color: #666;">
+                Total Reports: <strong>{{ reports.count }}</strong>
+            </p>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'export_division_pdf' division %}" 
+               style="background-color: #d32f2f; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: bold; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                📥 Download PDF Manifest
+            </a>
+            
+            <a href="{% url 'admin_dashboard' %}" 
+               style="background-color: white; border: 1px solid #ccc; color: #666; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600;">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if ward %}
+    <div style="margin-bottom: 20px;">
+        <span style="background: #2e7d32; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.9em;">
+            Filtering Ward: <strong>{{ ward }}</strong> 
+            <a href="{% url 'division_uploads' division %}" style="color: white; margin-left: 10px; text-decoration: none;">✕</a>
+        </span>
+    </div>
+    {% endif %}
+
+    <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background-color: #2e7d32; color: white;">
+                <tr>
+                    <th style="padding: 15px; text-align: left;">Resident / Location</th>
+                    <th style="padding: 15px; text-align: left;">Hierarchy (W/C)</th>
+                    <th style="padding: 15px; text-align: left;">Waste Image</th>
+                    <th style="padding: 15px; text-align: left;">Map</th>
+                    <th style="padding: 15px; text-align: left;">Status</th>
+                    <th style="padding: 15px; text-align: left;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr style="border-bottom: 1px solid #eee;" class="table-row">
+                    <td style="padding: 15px;">
+                        <strong>{{ report.user.full_name|default:report.user.username }}</strong><br>
+                        <small style="color: #888;">ID: {{ report.user.username }}</small>
+                    </td>
+                    <td style="padding: 15px;">
+                        <span style="background: #f0f0f0; padding: 2px 6px; border-radius: 4px; font-size: 0.9em;">W: {{ report.user.ward }}</span><br>
+                        <span style="background: #f0f0f0; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-top: 4px; font-size: 0.9em;">C: {{ report.user.cell }}</span>
+                    </td>
+
+                    <td style="padding: 15px;">
+                        {% if report.image %}
+                            <a href="{{ report.image.url }}" target="_blank" title="Click to view full image" style="text-decoration: none;">
+                                <div style="position: relative; display: inline-block; overflow: hidden; border-radius: 6px; border: 1px solid #ddd; width: 70px; height: 50px;">
+                                    <img src="{{ report.image.url }}" class="waste-thumbnail" 
+                                         style="width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s ease;">
+                                    <div class="image-overlay">
+                                        VIEW
+                                    </div>
+                                </div>
+                            </a>
+                        {% else %}
+                            <div style="width: 70px; height: 50px; background: #f9f9f9; border: 1px solid #eee; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #ccc;">
+                                No Image
+                            </div>
+                        {% endif %}
+                    </td>
+
+                    <td style="padding: 15px;">
+                        <a href="https://www.google.com/maps?q={{ report.latitude }},{{ report.longitude }}" 
+                           target="_blank" 
+                           style="text-decoration: none; font-weight: bold; color: #1a73e8; display: flex; align-items: center; gap: 4px;">
+                            📍 View
+                        </a>
+                    </td>
+                    <td style="padding: 15px;">
+                        {% if report.status == 'pending' %}
+                            <span style="color: #d32f2f; background: #ffcdd2; padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">PENDING</span>
+                        {% else %}
+                            <span style="color: #2e7d32; background: #c8e6c9; padding: 4px 10px; border-radius: 20px; font-size: 0.8em; font-weight: bold;">PICKED</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 15px;">
+                        {% if report.status == 'pending' %}
+                            <form action="{% url 'mark_as_picked' report.pk %}" method="POST">
+                                {% csrf_token %}
+                                <button type="submit" class="collect-btn">Collect</button>
+                            </form>
+                        {% else %}
+                            <span style="color: #2e7d32; font-weight: bold; display: flex; align-items: center; gap: 4px;">Done ✅</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="padding: 60px; text-align: center; color: #888;">
+                        <p style="font-size: 1.2em; margin-bottom: 10px;">No waste reports found for this division.</p>
+                        <small>New uploads will appear here automatically.</small>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+    .table-row:hover { background-color: #fcfcfc; }
+    
+    .collect-btn {
+        background: #2e7d32; 
+        color: white; 
+        border: none; 
+        padding: 8px 15px; 
+        border-radius: 4px; 
+        cursor: pointer; 
+        font-weight: bold; 
+        transition: 0.2s;
+    }
+    
+    .collect-btn:hover {
+        background: #1b5e20;
+        transform: translateY(-1px);
+    }
+
+    /* Interactive Image Styles */
+    .waste-thumbnail:hover {
+        transform: scale(1.1);
+    }
+
+    .image-overlay {
+        position: absolute; 
+        bottom: 0; 
+        background: rgba(46, 125, 50, 0.8); 
+        color: white; 
+        width: 100%; 
+        font-size: 8px; 
+        text-align: center; 
+        font-weight: bold;
+        padding: 2px 0;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    div:hover > .image-overlay {
+        opacity: 1;
+    }
+</style>
+{% endblock %}

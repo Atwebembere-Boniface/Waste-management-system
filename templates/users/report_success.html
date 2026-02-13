@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 50px auto; padding: 40px 20px; text-align: center; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+    
+    <div style="width: 80px; height: 80px; background: #e8f5e9; color: #2e7d32; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 40px;">
+        ✔
+    </div>
+
+    <h2 style="color: #2e7d32; margin-bottom: 10px;">Submission Received!</h2>
+    <p style="color: #555; line-height: 1.6; margin-bottom: 30px;">
+        Thank you for reporting waste in your area. Our team in <strong>{{ user.division }}</strong> has been notified, and we will schedule a pickup shortly.
+    </p>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+        <a href="{% url 'report_waste' %}" style="text-decoration: none; background: #2e7d32; color: white; padding: 12px; border-radius: 8px; font-weight: bold; transition: 0.3s;">
+            Report Another Issue
+        </a>
+        
+        <a href="{% url 'user_dashboard' %}" style="text-decoration: none; background: #f8f9fa; color: #333; padding: 12px; border-radius: 8px; font-weight: bold; border: 1px solid #ddd; transition: 0.3s;">
+            Back to Dashboard
+        </a>
+    </div>
+
+    <p style="margin-top: 30px; font-size: 0.85em; color: #888;">
+        Your contribution helps keep Kabale beautiful. 🌿
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<div style="max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+    <h2 style="color: #2e7d32; text-align: center; margin-top: 0;">Report Waste Accumulation</h2>
+    
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+        <button type="button" onclick="startCamera()" style="flex: 1; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>📷</span> Open Camera
+        </button>
+        <button type="button" onclick="document.getElementById('fileInput').click();" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <span>📁</span> Browse Files
+        </button>
+    </div>
+
+    <div id="map" style="height: 400px; width: 100%; margin-bottom: 15px; border-radius: 8px; border: 2px solid #2e7d32; z-index: 1;"></div>
+    
+    <form method="POST" enctype="multipart/form-data" id="wasteForm">
+        {% csrf_token %}
+        {{ form.latitude }}
+        {{ form.longitude }}
+        {{ form.location_address }}
+        
+        <div id="location-status-box" style="padding: 12px; border-radius: 5px; text-align: center; margin-bottom: 15px; background: #fff3cd; color: #856404; font-weight: bold; border: 1px solid #ffeeba; line-height: 1.4;">
+            🛰️ Establishing Precise OSM Connection...
+        </div>
+
+        <button type="submit" id="submitBtn" disabled style="width: 100%; padding: 15px; background: #2e7d32; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 1.1em; opacity: 0.6; cursor: not-allowed; transition: 0.3s;">
+            Upload Report
+        </button>
+    </form>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+    let map, marker, accuracyCircle, addressTimer;
+
+    // HIERARCHICAL ADDRESS LOGIC
+    async function getHierarchicalAddress(lat, lng) {
+        try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`, {
+                headers: { 'User-Agent': 'KabaleWasteApp/v7-Hierarchical' }
+            });
+            const data = await response.json();
+            const a = data.address;
+
+            let displayParts = [];
+            
+            // 1. SPECIFIC LANDMARK/BUILDING (e.g., Agric Faculty / Post Graduate Bldg)
+            if (a.amenity) displayParts.push(a.amenity); 
+            else if (a.building) displayParts.push(a.building);
+            else if (a.university) displayParts.push(a.university);
+
+            // 2. CELL/VILLAGE
+            if (a.village) displayParts.push(a.village + " Cell");
+            else if (a.suburb) displayParts.push(a.suburb + " Cell");
+
+            // 3. WARD
+            if (a.neighbourhood) displayParts.push(a.neighbourhood + " Ward");
+            else if (a.city_district) displayParts.push(a.city_district + " Ward");
+            
+            // 4. MUNICIPALITY
+            displayParts.push("Kabale Municipality");
+
+            // Final string format: "Agric Faculty - Kamukira Cell - Ward"
+            const finalString = displayParts.join(" - ");
+            
+            const addressInput = document.querySelector('[name="location_address"]');
+            if(addressInput) addressInput.value = finalString;
+            
+            return finalString;
+        } catch (error) {
+            return "Kabale Municipality Location";
+        }
+    }
+
+    if (navigator.geolocation) {
+        const statusBox = document.getElementById("location-status-box");
+        
+        navigator.geolocation.watchPosition((position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+
+            document.querySelector('[name="latitude"]').value = lat;
+            document.querySelector('[name="longitude"]').value = lng;
+
+            if (!map) {
+                map = L.map('map').setView([lat, lng], 19);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 20,
+                    attribution: '© OSM'
+                }).addTo(map);
+
+                marker = L.marker([lat, lng], {draggable: true}).addTo(map);
+                accuracyCircle = L.circle([lat, lng], {radius: accuracy, color: '#2e7d32', fillOpacity: 0.1}).addTo(map);
+                
+                marker.on('dragend', function() {
+                    const pos = marker.getLatLng();
+                    document.querySelector('[name="latitude"]').value = pos.lat;
+                    document.querySelector('[name="longitude"]').value = pos.lng;
+                    getHierarchicalAddress(pos.lat, pos.lng);
+                    accuracyCircle.setLatLng(pos);
+                    accuracyCircle.setRadius(15); 
+                });
+            } else {
+                marker.setLatLng([lat, lng]);
+                accuracyCircle.setLatLng([lat, lng]);
+                accuracyCircle.setRadius(accuracy);
+                if (accuracy < 35) map.setView([lat, lng]);
+            }
+
+            if (accuracy < 30) {
+                statusBox.style.background = "#d4edda";
+                statusBox.style.color = "#155724";
+                statusBox.innerHTML = `✅ Precise Location Locked (${Math.round(accuracy)}m)`;
+            } else {
+                statusBox.innerHTML = `🛰️ Finding Specific Building... (Current: ${Math.round(accuracy)}m)`;
+            }
+
+            clearTimeout(addressTimer);
+            addressTimer = setTimeout(async () => {
+                const detailedLabel = await getHierarchicalAddress(lat, lng);
+                statusBox.innerHTML += `<br><small style="font-weight:normal;">${detailedLabel}</small>`;
+                checkFormReady();
+            }, 1000);
+
+        }, (err) => { statusBox.innerHTML = "❌ GPS Error. Please enable Location."; }, 
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+    }
+
+    function checkFormReady() {
+        const lat = document.querySelector('[name="latitude"]').value;
+        const btn = document.getElementById("submitBtn");
+        if (lat) { 
+            btn.disabled = false; 
+            btn.style.opacity = "1"; 
+            btn.style.cursor = "pointer";
+        }
+    }
+</script>
+{% endblock %}

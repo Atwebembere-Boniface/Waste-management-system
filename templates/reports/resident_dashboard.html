@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="padding: 20px;">
+    
+    {% if messages %}
+    <div id="message-container" style="margin-bottom: 20px;">
+        {% for message in messages %}
+            <div class="alert-message" style="padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid transparent; transition: opacity 0.5s ease;
+                {% if message.tags == 'success' %}
+                    background-color: #d4edda; color: #155724; border-color: #c3e6cb;
+                {% elif message.tags == 'error' %}
+                    background-color: #f8d7da; color: #721c24; border-color: #f5c6cb;
+                {% else %}
+                    background-color: #e2e3e5; color: #383d41; border-color: #d6d8d9;
+                {% endif %}">
+                <strong>{% if message.tags == 'success' %}✅ Success:{% endif %}</strong> {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>My Waste Reports</h1>
+        <a href="{% url 'report_waste' %}" style="background: #2e7d32; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background 0.3s;">
+            + Report New Waste
+        </a>
+    </div>
+
+    <p style="color: #666;">Track the collection status of your reported waste in Kabale Municipality.</p>
+
+    <div style="margin-top: 30px; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <thead style="background: #2e7d32; color: white;">
+                <tr>
+                    <th style="padding: 15px; text-align: left;">Date Reported</th>
+                    <th style="padding: 15px; text-align: left;">Image Preview</th>
+                    <th style="padding: 15px; text-align: left;">Location</th>
+                    <th style="padding: 15px; text-align: left;">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in my_reports %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 15px;">{{ report.created_at|date:"M d, Y | H:i" }}</td>
+                    <td style="padding: 15px;">
+                        {% if report.image %}
+                        <a href="{{ report.image.url }}" target="_blank">
+                            <img src="{{ report.image.url }}" style="width: 60px; height: 45px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 1px solid #ddd;">
+                        </a>
+                        {% else %}
+                        <span style="color: #ccc;">No Image</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 15px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {% if report.location_address %}
+                            {{ report.location_address }}
+                        {% else %}
+                            <small style="color: #888;">{{ report.latitude }}, {{ report.longitude }}</small>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 15px;">
+                        {% if report.status == 'pending' %}
+                            <span style="color: #d32f2f; background: #ffcdd2; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.8em; white-space: nowrap;">
+                                WAITING FOR PICKUP
+                            </span>
+                        {% else %}
+                            <span style="color: #2e7d32; background: #c8e6c9; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.8em; white-space: nowrap;">
+                                COMPLETED / PICKED
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 40px; color: #888;">
+                        You haven't reported any waste yet. Help us keep Kabale clean!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert-message');
+        alerts.forEach(function(alert) {
+            setTimeout(function() {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500); // Remove from DOM after fade
+            }, 5000); // Wait 5 seconds
+        });
+    });
+</script>
+{% endblock %}

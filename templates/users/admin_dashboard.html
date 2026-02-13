@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="padding: 30px; background-color: #f8f9fa; min-height: 100vh;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2e7d32; padding-bottom: 10px; margin-bottom: 30px;">
+        <div>
+            <h1 style="color: #2e7d32; margin: 0;">Kabale Municipality Admin Dashboard</h1>
+            <p style="color: #666; margin: 5px 0 0 0;">Smart Waste Management System | 2026</p>
+        </div>
+        <div style="background: white; padding: 10px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: right;">
+            <span style="color: #666; font-size: 0.9em;">Total Municipality Residents:</span><br>
+            <strong style="font-size: 1.5em; color: #2e7d32;">{{ total_users }}</strong>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px;">
+        {% for div_name, stats in division_stats.items %}
+        <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #2e7d32; display: flex; flex-direction: column;">
+            <h2 style="margin-top: 0; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">{{ div_name }}</h2>
+            
+            <p style="margin: 15px 0 5px 0;">👥 Registered Residents: <strong>{{ stats.user_count }}</strong></p>
+            
+            <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0 0 10px 0; font-size: 0.9em; color: #2e7d32; font-weight: bold;">📊 DIVISION SUMMARY</p>
+                <div style="display: flex; justify-content: space-between; font-size: 0.85em;">
+                    <span>Total: <strong>{{ stats.total_reports }}</strong></span>
+                    <span style="color: #2e7d32;">Picked: <strong>{{ stats.picked }}</strong></span>
+                    <span style="color: #d32f2f;">Pending: <strong>{{ stats.pending }}</strong></span>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
+                <a href="{% url 'division_users' div_name %}" class="btn-dash">👥 View All Members</a>
+                <a href="{% url 'division_uploads' div_name %}" class="btn-dash" style="background-color: #e3f2fd; border-color: #2196f3; color: #1976d2;">
+                    🚛 View Waste Uploads
+                </a>
+                <a href="javascript:void(0)" class="btn-dash" onclick="toggleWards('{{ div_name|slugify }}')">
+                    🏘️ View Wards ({{ stats.all_wards|length }})
+                </a>
+                <a href="{% url 'export_division_pdf' div_name %}" class="btn-report" style="text-decoration: none; text-align: center;">
+                    📥 Generate Division Manifest (PDF)
+                </a>
+            </div>
+
+            <div id="wards-{{ div_name|slugify }}" style="display: none; margin-top: 20px; border-top: 2px dashed #ddd; padding-top: 15px;">
+                <h4 style="color: #555; margin-bottom: 10px; font-size: 0.9em;">Select Ward for Analytics:</h4>
+                
+                {% for ward in stats.all_wards %}
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #2e7d32; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
+                        <span style="font-weight: bold; display: block; margin-bottom: 10px; color: #333; font-size: 1em;">
+                            {{ ward }}
+                        </span>
+
+                        <div style="display: flex; justify-content: flex-start; gap: 15px; font-size: 0.85em; align-items: center;">
+                            <!-- <a href="{% url 'ward_members' div_name=div_name ward_name=ward %}" style="color: #2e7d32; text-decoration: none; font-weight: 600;">
+                                👥 Members
+                            </a> -->
+                            
+                            <span style="color: #ccc;">|</span>
+                            
+                            <a href="{% url 'ward_uploads_list' div_name ward %}" style="color: #2e7d32; text-decoration: none; font-weight: 600;">
+                                🚛 Uploads
+                            </a>
+                            
+                            <span style="color: #ccc;">|</span>
+                            
+                            <a href="{% url 'ward_detail' div_name ward %}" style="color: #1a73e8; text-decoration: none; font-weight: 600;">
+                                🏷️ View Cells
+                            </a>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p style="font-size: 0.8em; color: #999; text-align: center;">No wards configured.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function toggleWards(id) {
+    const div = document.getElementById('wards-' + id);
+    if (div) {
+        div.style.display = (div.style.display === 'none' || div.style.display === '') ? 'block' : 'none';
+    }
+}
+</script>
+
+<style>
+    .btn-dash { 
+        display: block; padding: 10px; background: #ffffff; 
+        border: 1px solid #2e7d32; color: #2e7d32; text-decoration: none; 
+        border-radius: 6px; text-align: center; font-size: 0.85em; 
+        font-weight: 600; transition: all 0.2s ease; 
+    }
+    .btn-dash:hover { 
+        background: #2e7d32; color: white; transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .btn-report { 
+        margin-top: 5px; width: 100%; padding: 12px; background: #2e7d32; 
+        color: white; border: none; border-radius: 6px; cursor: pointer; 
+        font-weight: bold; transition: background 0.3s; font-size: 0.9em;
+    }
+    .btn-report:hover { background: #1b5e20; }
+</style>
+{% endblock %}

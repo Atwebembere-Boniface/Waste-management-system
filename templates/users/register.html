@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: center; align-items: center; min-height: 90vh; padding: 20px; background-color: #f4f7f6;">
+    <div style="max-width: 550px; width: 100%; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #e0e0e0;">
+        
+        <div style="text-align: center; margin-bottom: 25px;">
+            <h2 style="color: #2e7d32; margin-bottom: 5px;">Join the Clean Kabale Initiative</h2>
+            <p style="color: #666; font-size: 0.9em;">Please fill in your details to create a resident account.</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; font-weight: 600; margin-bottom: 6px; color: #333; font-size: 0.85em;">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                        <p style="color: #d32f2f; font-size: 0.8em; margin-top: 4px;">{{ error }}</p>
+                    {% endfor %}
+                    {% if field.help_text %}
+                        <small style="display: block; color: #888; font-size: 0.75em; margin-top: 4px;">{{ field.help_text }}</small>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button type="submit" style="width: 100%; padding: 14px; background-color: #2e7d32; color: white; border: none; border-radius: 6px; font-weight: bold; font-size: 1.1em; cursor: pointer; margin-top: 15px;">
+                Create Account
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+const kabaleData = {
+    "Central Division": {
+        "Nyabikoni": ["Kanyakiriro", "Rutoma", "Rutooma Upper", "Rutooma Lower", "Nyabikoni Central"],
+        "Kigongi": ["Kigongi A", "Kigongi B", "Nyakahita"],
+        "Central": ["Makanga", "Garage Street", "Rwakaraba", "Main Street", "Town Centre"],
+        "Butobere": ["Butobere", "Kijurera", "Kashaki", "Rugarama Rd"]
+    },
+    "Southern Division": {
+        "Karubanda Ward": ["Rwagaana", "Rwehuye"],
+        "Kirigime Ward": ["Bataka", "Central", "Kabale N.T.C", "Kamukira", "Kekuubo", "Rushambya"],
+        "Mwanjari Ward": ["Igabiro", "Kikungiri", "Ndorwa", "Nyakabungo", "Nyakiharo", "Nyangande", "Rwagaana/Kamatojo", "Rwamukundi"],
+        "Rushaki Ward": ["Nyamabare", "Nyarukokoromi", "Omwibare", "Rugyendeira", "Ruhita", "Rushaki"]
+    },
+    "Northern Division": {
+        "Kikungiri Ward": ["Kikungiri Upper", "Kikungiri Lower", "Rwakaraba", "Kabaraga", "Karubanda"],
+        "Kijuguta Ward": ["Kijuguta Central", "Nyakihanga", "Kijuguta Upper", "Kijuguta Lower"],
+        "Kirigime Ward": ["Kirigime A", "Kirigime B", "Nyakabungo", "Butobere"],
+        "Kyanamira Ward": ["Kyanamira Central", "Nyabikoni", "Hamurwa Road Cell", "Nyamwegabira"]
+    }
+};
+
+// Selectors for Django-rendered field names
+const divisionSelect = document.querySelector('[name="division"]');
+const wardSelect = document.querySelector('[name="ward"]');
+const cellSelect = document.querySelector('[name="cell"]');
+
+// Disable ward/cell by default until division is selected
+if(wardSelect && !wardSelect.value) wardSelect.disabled = true;
+if(cellSelect && !cellSelect.value) cellSelect.disabled = true;
+
+divisionSelect.addEventListener('change', function() {
+    const division = this.value;
+    wardSelect.innerHTML = '<option value="">-- Select Ward --</option>';
+    cellSelect.innerHTML = '<option value="">-- Select Cell --</option>';
+    
+    if (division && kabaleData[division]) {
+        wardSelect.disabled = false;
+        cellSelect.disabled = true;
+        Object.keys(kabaleData[division]).sort().forEach(ward => {
+            wardSelect.add(new Option(ward, ward));
+        });
+    } else {
+        wardSelect.disabled = true;
+        cellSelect.disabled = true;
+    }
+});
+
+wardSelect.addEventListener('change', function() {
+    const division = divisionSelect.value;
+    const ward = this.value;
+    cellSelect.innerHTML = '<option value="">-- Select Cell --</option>';
+    
+    if (ward && kabaleData[division][ward]) {
+        cellSelect.disabled = false;
+        kabaleData[division][ward].sort().forEach(cell => {
+            cellSelect.add(new Option(cell, cell));
+        });
+    } else {
+        cellSelect.disabled = true;
+    }
+});
+</script>
+
+<style>
+    input, select { 
+        width: 100%; 
+        padding: 12px; 
+        border: 1px solid #ccd0d5; 
+        border-radius: 6px; 
+        box-sizing: border-box; 
+        background-color: white;
+    }
+    input:focus, select:focus { 
+        border-color: #2e7d32; 
+        outline: none; 
+        box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+    }
+    select:disabled {
+        background-color: #f9f9f9;
+        cursor: not-allowed;
+        color: #888;
+    }
+</style>
+{% endblock %}

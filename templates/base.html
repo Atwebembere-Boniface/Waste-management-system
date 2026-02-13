@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean Kabale | Waste Management</title>
+    <style>
+        /* Maintaining your original body font and blue background preference */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            background-color: #ffffff; /* Matches your home.html primary blue */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        nav a { text-decoration: none; transition: opacity 0.3s; }
+        nav a:hover { opacity: 0.8; }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: auto; 
+            background: transparent; /* Allows the blue background to show through */
+            flex: 1; /* Pushes the footer to the bottom */
+        }
+
+        .nav-link-separator { 
+            border-left: 1px solid rgba(255,255,255,0.3); 
+            margin-left: 15px; 
+            padding-left: 15px; 
+            height: 20px; 
+            display: inline-block; 
+            vertical-align: middle; 
+        }
+
+        /* Footer styling to match Header exactly */
+        .site-footer {
+            background-color: #2e7d32; 
+            color: white; 
+            text-align: center; 
+            padding: 25px 30px; 
+            margin-top: 50px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+<nav style="display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: #2e7d32; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+    <div style="display: flex; align-items: center;">
+        <a href="{% url 'home' %}" style="color: white; font-size: 1.2em; font-weight: bold;">
+            Kabale Smart Waste Management System
+        </a>
+        <span class="nav-link-separator"></span>
+        <a href="{% url 'home' %}" style="color: white; font-size: 1em;">Home</a>
+    </div>
+    
+    <div style="display: flex; align-items: center; gap: 20px;">
+        {% if user.is_authenticated %}
+            {% if user.is_staff %}
+                <a href="{% url 'admin_dashboard' %}" style="color: white; border: 1px solid white; padding: 5px 12px; border-radius: 4px;">Admin Dashboard</a>
+            {% else %}
+                <a href="{% url 'resident_dashboard' %}" style="color: white; border: 1px solid white; padding: 5px 12px; border-radius: 4px;">My Reports</a>
+                <a href="{% url 'report_waste' %}" style="color: #ffd700; font-weight: bold;">+ Report Waste</a>
+            {% endif %}
+
+            <span style="margin-left: 10px; font-size: 0.9em;">User: <strong>{{ user.username }}</strong></span>
+            
+            <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" style="background: none; border: none; color: white; cursor: pointer; text-decoration: underline; font-family: inherit; font-size: 1em;">
+                    Logout
+                </button>
+            </form>
+        {% else %}
+            <a href="{% url 'login' %}" style="color: white;">Login</a>
+            <a href="{% url 'register' %}" style="background: white; color: #2e7d32; padding: 6px 15px; border-radius: 4px; font-weight: bold;">Register</a>
+        {% endif %}
+    </div>
+</nav>
+
+<div class="container">
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 15px; background-color: #d4edda; color: #155724; text-align: center; border-bottom: 1px solid #c3e6cb; margin-top: 10px; border-radius: 5px;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% block content %}
+    {% endblock %}
+</div>
+
+<footer class="site-footer">
+    <div style="max-width: 1200px; margin: auto;">
+        &copy; 2026 Kabale Municipality Smart Waste Management System
+    </div>
+</footer>
+
+</body>
+</html>
