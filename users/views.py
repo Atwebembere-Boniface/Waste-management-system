@@ -1,4 +1,6 @@
 from django.urls import reverse, reverse_lazy
+from .forms import ResidentRegistrationForm, AdminRegistrationForm
+from .models import Message
 from django.views.generic import CreateView, TemplateView, ListView
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib.messages.views import SuccessMessageMixin
@@ -85,20 +87,23 @@ class AdminDashboardView(UserPassesTestMixin, TemplateView):
         div_data = {}
         
         for div, wards_dict in KABALE_HIERARCHY.items():
-            # Standardizing filters to look at the user profile or direct user fields
             div_data[div] = {
                 'user_count': User.objects.filter(division=div, is_staff=False).count(),
                 'total_reports': WasteReport.objects.filter(user__division=div).count(),
-                'picked': WasteReport.objects.filter(user__division=div, status='picked').count(),
+                'picked': WasteReport.objects.filter(user__division=div, status='collected').count(),  # FIXED: was 'picked'
                 'pending': WasteReport.objects.filter(user__division=div, status='pending').count(),
                 'all_wards': sorted(wards_dict.keys())
             }
         
         context['division_stats'] = div_data
         context['total_users'] = User.objects.filter(is_staff=False).count()
-        return context    
 
+        # Unread message badge for the nav and dashboard
+        context['total_unread_messages'] = Message.objects.filter(
+            recipient=self.request.user, is_read=False
+        ).count()
 
+        return context
 
 
 class WardDetailView(UserPassesTestMixin, TemplateView):
@@ -405,3 +410,121 @@ class ToggleWasteStatusView(LoginRequiredMixin, View):
         # FIX: Redirect back to the page the admin was just on (Ward Detail page)
         # This prevents the NoReverseMatch error by not requiring explicit URL arguments
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', reverse('admin_dashboard')))
+
+
+class SendMessageView(LoginRequiredMixin, View):
+    """Resident sends a message about a specific report."""
+    def post(self, request, report_id):
+        report = get_object_or_404(WasteReport, id=report_id, user=request.user)
+        body = request.POST.get('body', '').strip()
+
+        if not body:
+            messages.error(request, "Message cannot be empty.")
+            return redirect(request.META.get('HTTP_REFERER', 'resident_dashboard'))
+
+        # Find the first admin user to receive the message
+        admin_user = User.objects.filter(is_staff=True).first()
+        if not admin_user:
+            messages.error(request, "No admin available. Please try again later.")
+            return redirect('resident_dashboard')
+
+        Message.objects.create(
+            report=report,
+            sender=request.user,
+            recipient=admin_user,
+            body=body
+        )
+
+        # Notify admin by email
+        send_custom_email(
+            subject=f"💬 New message from {request.user.username} | Report #{report.id}",
+            recipient_email=admin_user.email,
+            message_body=(
+                f"Hello Admin,\n\n"
+                f"{request.user.get_full_name() or request.user.username} has sent you a message "
+                f"regarding their waste report (ID: {report.id}).\n\n"
+                f"Message:\n\"{body}\"\n\n"
+                f"Location: {report.location_address or f'{report.latitude}, {report.longitude}'}\n\n"
+                f"Log in to the admin dashboard to reply."
+            )
+        )
+
+        messages.success(request, "Your message was sent to the admin.")
+        return redirect('resident_dashboard')
+
+
+class AdminReplyMessageView(UserPassesTestMixin, View):
+    """Admin replies to a resident's message from any admin page."""
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def post(self, request, report_id):
+        report = get_object_or_404(WasteReport, id=report_id)
+        body = request.POST.get('body', '').strip()
+
+        if not body:
+            messages.error(request, "Reply cannot be empty.")
+            return redirect(request.META.get('HTTP_REFERER', 'admin_dashboard'))
+
+        Message.objects.create(
+            report=report,
+            sender=request.user,
+            recipient=report.user,
+            body=body
+        )
+
+        # Mark all resident messages on this report as read
+        Message.objects.filter(report=report, recipient=request.user, is_read=False).update(is_read=True)
+
+        # Notify resident by email
+        send_custom_email(
+            subject=f"📩 Admin replied to your waste report #{report.id}",
+            recipient_email=report.user.email,
+            message_body=(
+                f"Hello {report.user.first_name or report.user.username},\n\n"
+                f"The Kabale Municipality admin has replied to your waste report.\n\n"
+                f"Message:\n\"{body}\"\n\n"
+                f"Log in to your dashboard to view the full conversation."
+            )
+        )
+
+        messages.success(request, f"Reply sent to {report.user.username}.")
+        return redirect(request.META.get('HTTP_REFERER', 'admin_dashboard'))
+
+
+class AdminInboxView(UserPassesTestMixin, TemplateView):
+    """Admin sees all open conversations grouped by report."""
+    template_name = 'users/admin_inbox.html'
+
+    def test_func(self):
+        return self.request.user.is_staff
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Get all reports that have at least one message
+        reports_with_messages = (
+            WasteReport.objects
+            .filter(messages__isnull=False)
+            .distinct()
+            .select_related('user')
+            .prefetch_related('messages__sender')
+            .order_by('-messages__created_at')
+        )
+
+        # Annotate unread count per report
+        inbox = []
+        for report in reports_with_messages:
+            unread = report.messages.filter(recipient=self.request.user, is_read=False).count()
+            inbox.append({'report': report, 'unread': unread})
+
+        context['inbox'] = inbox
+        context['total_unread'] = sum(i['unread'] for i in inbox)
+        return context
+
+
+class AdminRegisterView(SuccessMessageMixin, CreateView):
+    template_name = 'users/admin_register.html'
+    form_class = AdminRegistrationForm
+    success_url = reverse_lazy('login')
+    success_message = "Admin account created successfully! You can now log in."        

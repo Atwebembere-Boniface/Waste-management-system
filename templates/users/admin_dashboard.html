@@ -44,27 +44,18 @@
 
             <div id="wards-{{ div_name|slugify }}" style="display: none; margin-top: 20px; border-top: 2px dashed #ddd; padding-top: 15px;">
                 <h4 style="color: #555; margin-bottom: 10px; font-size: 0.9em;">Select Ward for Analytics:</h4>
-                
                 {% for ward in stats.all_wards %}
                     <div style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid #2e7d32; border-right: 1px solid #eee; border-bottom: 1px solid #eee;">
                         <span style="font-weight: bold; display: block; margin-bottom: 10px; color: #333; font-size: 1em;">
                             {{ ward }}
                         </span>
-
                         <div style="display: flex; justify-content: flex-start; gap: 15px; font-size: 0.85em; align-items: center;">
-                            <!-- <a href="{% url 'ward_members' div_name=div_name ward_name=ward %}" style="color: #2e7d32; text-decoration: none; font-weight: 600;">
-                                👥 Members
-                            </a> -->
-                            
                             <span style="color: #ccc;">|</span>
-                            
-                            <a href="{% url 'ward_uploads_list' div_name ward %}" style="color: #2e7d32; text-decoration: none; font-weight: 600;">
+                            <a href="{% url 'ward_uploads_list' div_name ward %}" class="ward-action-link">
                                 🚛 Uploads
                             </a>
-                            
                             <span style="color: #ccc;">|</span>
-                            
-                            <a href="{% url 'ward_detail' div_name ward %}" style="color: #1a73e8; text-decoration: none; font-weight: 600;">
+                            <a href="{% url 'ward_detail' div_name ward %}" class="ward-action-link" style="color: #1a73e8;">
                                 🏷️ View Cells
                             </a>
                         </div>
@@ -102,7 +93,57 @@ function toggleWards(id) {
         margin-top: 5px; width: 100%; padding: 12px; background: #2e7d32; 
         color: white; border: none; border-radius: 6px; cursor: pointer; 
         font-weight: bold; transition: background 0.3s; font-size: 0.9em;
+        box-sizing: border-box;
     }
     .btn-report:hover { background: #1b5e20; }
+
+    .ward-action-link {
+        color: #2e7d32;
+        text-decoration: none;
+        font-weight: 600;
+        padding: 6px 0;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    @media (max-width: 640px) {
+        /* Dashboard header stacks vertically */
+        div[style*="justify-content: space-between"][style*="border-bottom: 3px"] {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        /* Total users card goes full width */
+        div[style*="justify-content: space-between"][style*="border-bottom: 3px"] > div:last-child {
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+        }
+
+        /* Division cards grid: single column on mobile */
+        div[style*="grid-template-columns"] {
+            grid-template-columns: 1fr !important;
+        }
+
+        /* Division summary stats wrap into 2 rows on very small screens */
+        div[style*="justify-content: space-between"][style*="font-size: 0.85em"] {
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* Ward action links get bigger tap targets */
+        .ward-action-link {
+            min-height: 44px;
+            padding: 10px 4px;
+            font-size: 0.95em;
+        }
+
+        /* Ward row padding bump for touch */
+        div[style*="border-left: 4px solid #2e7d32"] {
+            padding: 14px 12px;
+        }
+    }
 </style>
 {% endblock %}

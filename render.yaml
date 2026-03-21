@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: kabale_project
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn waste_project.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DEBUG
+        value: False

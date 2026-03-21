@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clean Kabale | Waste Management</title>
     <style>
-        /* Maintaining your original body font and blue background preference */
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
             margin: 0; 
-            background-color: #ffffff; /* Matches your home.html primary blue */
+            background-color: #ffffff;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -21,8 +20,8 @@
         .container { 
             max-width: 1200px; 
             margin: auto; 
-            background: transparent; /* Allows the blue background to show through */
-            flex: 1; /* Pushes the footer to the bottom */
+            background: transparent;
+            flex: 1;
         }
 
         .nav-link-separator { 
@@ -34,7 +33,6 @@
             vertical-align: middle; 
         }
 
-        /* Footer styling to match Header exactly */
         .site-footer {
             background-color: #2e7d32; 
             color: white; 
@@ -43,30 +41,200 @@
             margin-top: 50px;
             box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
         }
+
+        .nav-inbox-btn {
+            position: relative;
+            color: white;
+            border: 1px solid white;
+            padding: 5px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 1em;
+            transition: opacity 0.3s;
+        }
+
+        .inbox-badge {
+            position: absolute;
+            top: -7px;
+            right: -7px;
+            background: #d32f2f;
+            color: white;
+            font-size: 0.68em;
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 10px;
+            line-height: 1.3;
+            min-width: 16px;
+            text-align: center;
+        }
+
+        /* Hamburger button - hidden on desktop */
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+        .hamburger span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: white;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        /* Nav right section */
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Mobile nav dropdown */
+        @media (max-width: 640px) {
+            .container {
+                padding: 0 12px;
+            }
+
+            .nav-title {
+                font-size: 0.95em !important;
+            }
+
+            .nav-link-separator,
+            .nav-home-link {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .nav-right {
+                display: none;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0;
+                position: absolute;
+                top: 56px;
+                left: 0;
+                right: 0;
+                background: #1b5e20;
+                z-index: 999;
+                padding: 10px 0;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            }
+
+            .nav-right.open {
+                display: flex;
+            }
+
+            .nav-right a,
+            .nav-right span,
+            .nav-right form {
+                width: 100%;
+                padding: 12px 20px;
+                border: none !important;
+                border-radius: 0 !important;
+                box-sizing: border-box;
+                font-size: 0.95em;
+            }
+
+            .nav-right a {
+                display: block;
+                border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+            }
+
+            .nav-right a:last-of-type {
+                border-bottom: none !important;
+            }
+
+            .nav-inbox-btn {
+                border: none;
+                padding: 12px 20px;
+                border-radius: 0 !important;
+            }
+
+            .nav-inbox-btn .inbox-badge {
+                position: static;
+                display: inline-block;
+                margin-left: 8px;
+                vertical-align: middle;
+            }
+
+            .nav-right form button {
+                background: none;
+                border: none;
+                color: white;
+                cursor: pointer;
+                font-size: 0.95em;
+                text-align: left;
+                width: 100%;
+                padding: 0;
+            }
+
+            .nav-user-info {
+                color: rgba(255,255,255,0.7) !important;
+                font-size: 0.85em !important;
+                padding: 8px 20px !important;
+                border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+            }
+
+            nav {
+                position: relative;
+            }
+
+            .site-footer {
+                margin-top: 30px;
+                padding: 18px 16px;
+                font-size: 0.85em;
+            }
+        }
     </style>
 </head>
 <body>
 
 <nav style="display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: #2e7d32; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
     <div style="display: flex; align-items: center;">
-        <a href="{% url 'home' %}" style="color: white; font-size: 1.2em; font-weight: bold;">
+        <a href="{% url 'home' %}" class="nav-title" style="color: white; font-size: 1.2em; font-weight: bold;">
             Kabale Smart Waste Management System
         </a>
         <span class="nav-link-separator"></span>
-        <a href="{% url 'home' %}" style="color: white; font-size: 1em;">Home</a>
+        <a href="{% url 'home' %}" class="nav-home-link" style="color: white; font-size: 1em;">Home</a>
     </div>
-    
-    <div style="display: flex; align-items: center; gap: 20px;">
+
+    <!-- Hamburger button (mobile only) -->
+    <button class="hamburger" onclick="toggleNav()" aria-label="Toggle menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <!-- Nav right: links, user info, logout -->
+    <div class="nav-right" id="navRight">
         {% if user.is_authenticated %}
             {% if user.is_staff %}
-                <a href="{% url 'admin_dashboard' %}" style="color: white; border: 1px solid white; padding: 5px 12px; border-radius: 4px;">Admin Dashboard</a>
+                <a href="{% url 'admin_dashboard' %}" style="color: white; border: 1px solid white; padding: 5px 12px; border-radius: 4px;">
+                    Admin Dashboard
+                </a>
+                <a href="{% url 'admin_inbox' %}" class="nav-inbox-btn">
+                    💬 Inbox
+                    {% if total_unread_messages > 0 %}
+                        <span class="inbox-badge">{{ total_unread_messages }}</span>
+                    {% endif %}
+                </a>
             {% else %}
                 <a href="{% url 'resident_dashboard' %}" style="color: white; border: 1px solid white; padding: 5px 12px; border-radius: 4px;">My Reports</a>
                 <a href="{% url 'report_waste' %}" style="color: #ffd700; font-weight: bold;">+ Report Waste</a>
             {% endif %}
 
-            <span style="margin-left: 10px; font-size: 0.9em;">User: <strong>{{ user.username }}</strong></span>
-            
+            <span class="nav-user-info" style="margin-left: 10px; font-size: 0.9em; color: white;">
+                User: <strong>{{ user.username }}</strong>
+            </span>
+
             <form action="{% url 'logout' %}" method="post" style="display: inline;">
                 {% csrf_token %}
                 <button type="submit" style="background: none; border: none; color: white; cursor: pointer; text-decoration: underline; font-family: inherit; font-size: 1em;">
@@ -98,6 +266,20 @@
         &copy; 2026 Kabale Municipality Smart Waste Management System
     </div>
 </footer>
+
+<script>
+    function toggleNav() {
+        const nav = document.getElementById('navRight');
+        nav.classList.toggle('open');
+    }
+
+    // Close nav when clicking a link inside it
+    document.querySelectorAll('#navRight a').forEach(link => {
+        link.addEventListener('click', () => {
+            document.getElementById('navRight').classList.remove('open');
+        });
+    });
+</script>
 
 </body>
 </html>

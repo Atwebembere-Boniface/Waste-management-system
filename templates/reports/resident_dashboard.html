@@ -2,7 +2,7 @@
 
 {% block content %}
 <div style="padding: 20px;">
-    
+
     {% if messages %}
     <div id="message-container" style="margin-bottom: 20px;">
         {% for message in messages %}
@@ -20,60 +20,134 @@
     </div>
     {% endif %}
 
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-        <h1>My Waste Reports</h1>
-        <a href="{% url 'report_waste' %}" style="background: #2e7d32; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; transition: background 0.3s;">
+    <div class="dashboard-header">
+        <h1 style="margin: 0;">My Waste Reports</h1>
+        <a href="{% url 'report_waste' %}" class="btn-new-report">
             + Report New Waste
         </a>
     </div>
 
-    <p style="color: #666;">Track the collection status of your reported waste in Kabale Municipality.</p>
+    <p style="color: #666; margin-top: 8px;">Track the collection status of your reported waste in Kabale Municipality.</p>
 
-    <div style="margin-top: 30px; overflow-x: auto;">
-        <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <!-- Scroll hint on mobile -->
+    <p class="scroll-hint" style="display: none; color: #1a73e8; font-size: 0.8em; margin: 8px 0 4px 0;">
+        ← Swipe left to see all columns →
+    </p>
+
+    <div style="margin-top: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+        <table style="width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-width: 620px;">
             <thead style="background: #2e7d32; color: white;">
                 <tr>
                     <th style="padding: 15px; text-align: left;">Date Reported</th>
-                    <th style="padding: 15px; text-align: left;">Image Preview</th>
+                    <th style="padding: 15px; text-align: left;">Image</th>
                     <th style="padding: 15px; text-align: left;">Location</th>
                     <th style="padding: 15px; text-align: left;">Status</th>
+                    <th style="padding: 15px; text-align: left;">Messages</th>
                 </tr>
             </thead>
             <tbody>
                 {% for report in my_reports %}
+                {% with msg_count=report.messages.count %}
+
                 <tr style="border-bottom: 1px solid #eee;">
-                    <td style="padding: 15px;">{{ report.created_at|date:"M d, Y | H:i" }}</td>
+                    <td style="padding: 15px; white-space: nowrap;">{{ report.created_at|date:"M d, Y" }}<br>
+                        <small style="color: #999;">{{ report.created_at|date:"H:i" }}</small>
+                    </td>
+
                     <td style="padding: 15px;">
                         {% if report.image %}
                         <a href="{{ report.image.url }}" target="_blank">
                             <img src="{{ report.image.url }}" style="width: 60px; height: 45px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 1px solid #ddd;">
                         </a>
                         {% else %}
-                        <span style="color: #ccc;">No Image</span>
+                        <span style="color: #ccc; font-size: 0.85em;">No Image</span>
                         {% endif %}
                     </td>
-                    <td style="padding: 15px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+
+                    <td style="padding: 15px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                         {% if report.location_address %}
                             {{ report.location_address }}
                         {% else %}
                             <small style="color: #888;">{{ report.latitude }}, {{ report.longitude }}</small>
                         {% endif %}
                     </td>
+
                     <td style="padding: 15px;">
                         {% if report.status == 'pending' %}
-                            <span style="color: #d32f2f; background: #ffcdd2; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.8em; white-space: nowrap;">
-                                WAITING FOR PICKUP
+                            <span style="color: #d32f2f; background: #ffcdd2; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.75em; white-space: nowrap; display: inline-block;">
+                                PENDING
                             </span>
                         {% else %}
-                            <span style="color: #2e7d32; background: #c8e6c9; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 0.8em; white-space: nowrap;">
-                                COMPLETED / PICKED
+                            <span style="color: #2e7d32; background: #c8e6c9; padding: 5px 10px; border-radius: 20px; font-weight: bold; font-size: 0.75em; white-space: nowrap; display: inline-block;">
+                                COLLECTED
                             </span>
                         {% endif %}
                     </td>
+
+                    <td style="padding: 15px;">
+                        <button onclick="toggleThread('thread-{{ report.id }}')"
+                            style="background: {% if msg_count > 0 %}#1a73e8{% else %}#f0f0f0{% endif %};
+                                   color: {% if msg_count > 0 %}white{% else %}#666{% endif %};
+                                   border: none; padding: 8px 14px; border-radius: 20px;
+                                   cursor: pointer; font-size: 0.8em; font-weight: bold;
+                                   white-space: nowrap; transition: background 0.2s;
+                                   min-height: 36px;">
+                            💬 {% if msg_count > 0 %}{{ msg_count }}{% else %}Message{% endif %}
+                        </button>
+                    </td>
                 </tr>
+
+                {# Expandable message thread row #}
+                <tr id="thread-{{ report.id }}" style="display: none; background: #f8fbff;">
+                    <td colspan="5" style="padding: 0;">
+                        <div style="padding: 16px 18px; border-top: 2px dashed #c5d8f5; border-bottom: 2px dashed #c5d8f5;">
+
+                            <p style="margin: 0 0 12px 0; font-size: 0.85em; color: #555; font-weight: bold;">
+                                💬 Report #{{ report.id }}
+                                <span style="color: #999; font-weight: normal; margin-left: 6px;">
+                                    {{ report.location_address|default:"Location on file"|truncatechars:40 }}
+                                </span>
+                            </p>
+
+                            <div style="margin-bottom: 12px;">
+                                {% for msg in report.messages.all %}
+                                <div style="margin-bottom: 10px; display: flex;
+                                    {% if msg.sender.is_staff %}justify-content: flex-end;{% else %}justify-content: flex-start;{% endif %}">
+                                    <div class="chat-bubble {% if msg.sender.is_staff %}bubble-admin{% else %}bubble-resident{% endif %}">
+                                        <div style="font-size: 0.78em; font-weight: bold; margin-bottom: 4px; opacity: 0.75;">
+                                            {% if msg.sender.is_staff %}🏛️ Admin{% else %}🧑 You{% endif %}
+                                            <span style="font-weight: normal; margin-left: 5px;">{{ msg.created_at|date:"M d · H:i" }}</span>
+                                        </div>
+                                        {{ msg.body }}
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <p style="color: #aaa; font-size: 0.85em; margin: 0 0 10px 0; font-style: italic;">
+                                    No messages yet. Send a message if your waste hasn't been collected.
+                                </p>
+                                {% endfor %}
+                            </div>
+
+                            <form method="POST" action="{% url 'send_message' report.id %}" class="reply-form">
+                                {% csrf_token %}
+                                <textarea name="body" rows="2"
+                                    placeholder="e.g. My waste at this location has not been collected for 3 days..."
+                                    class="reply-textarea"
+                                    onfocus="this.style.borderColor='#1a73e8'"
+                                    onblur="this.style.borderColor='#c5d8f5'"></textarea>
+                                <button type="submit" class="reply-btn reply-btn-blue">
+                                    Send ➤
+                                </button>
+                            </form>
+
+                        </div>
+                    </td>
+                </tr>
+
+                {% endwith %}
                 {% empty %}
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 40px; color: #888;">
+                    <td colspan="5" style="text-align: center; padding: 40px; color: #888;">
                         You haven't reported any waste yet. Help us keep Kabale clean!
                     </td>
                 </tr>
@@ -83,14 +157,126 @@
     </div>
 </div>
 
+<style>
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+    .btn-new-report {
+        background: #2e7d32;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        transition: background 0.3s;
+        white-space: nowrap;
+    }
+    .btn-new-report:hover { background: #1b5e20; }
+
+    .chat-bubble {
+        max-width: 65%;
+        padding: 10px 14px;
+        border-radius: 12px;
+        font-size: 0.88em;
+        line-height: 1.55;
+    }
+    .bubble-admin {
+        background: #e8f5e9; color: #1b5e20;
+        border-bottom-right-radius: 3px;
+    }
+    .bubble-resident {
+        background: #e3f2fd; color: #0d47a1;
+        border-bottom-left-radius: 3px;
+    }
+
+    .reply-form {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+    }
+    .reply-textarea {
+        flex: 1;
+        padding: 10px 14px;
+        border: 1px solid #c5d8f5;
+        border-radius: 8px;
+        font-size: 0.88em;
+        resize: none;
+        font-family: inherit;
+        color: #333;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+    .reply-btn {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        height: 42px;
+        align-self: flex-end;
+        font-size: 0.88em;
+        white-space: nowrap;
+        transition: background 0.2s;
+    }
+    .reply-btn-blue { background: #1a73e8; color: white; }
+    .reply-btn-blue:hover { background: #1558b0; }
+
+    @media (max-width: 640px) {
+        /* Header stacks vertically */
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        /* Button goes full width */
+        .btn-new-report {
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        /* Show swipe hint */
+        .scroll-hint {
+            display: block !important;
+        }
+        /* Chat bubbles wider */
+        .chat-bubble {
+            max-width: 88%;
+        }
+        /* Reply form stacks */
+        .reply-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .reply-btn {
+            height: auto;
+            padding: 12px;
+            width: 100%;
+            align-self: auto;
+        }
+    }
+</style>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    function toggleThread(id) {
+        const row = document.getElementById(id);
+        if (!row) return;
+        const isHidden = row.style.display === 'none' || row.style.display === '';
+        row.style.display = isHidden ? 'table-row' : 'none';
+        if (isHidden) {
+            setTimeout(() => row.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
         const alerts = document.querySelectorAll('.alert-message');
-        alerts.forEach(function(alert) {
-            setTimeout(function() {
+        alerts.forEach(function (alert) {
+            setTimeout(function () {
                 alert.style.opacity = '0';
-                setTimeout(() => alert.remove(), 500); // Remove from DOM after fade
-            }, 5000); // Wait 5 seconds
+                setTimeout(() => alert.remove(), 500);
+            }, 5000);
         });
     });
 </script>

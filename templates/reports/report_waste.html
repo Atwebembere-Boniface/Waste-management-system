@@ -3,74 +3,155 @@
 {% block content %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-<div style="max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-    <h2 style="color: #2e7d32; text-align: center; margin-top: 0;">Report Waste Accumulation</h2>
-    
-    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button type="button" onclick="startCamera()" style="flex: 1; padding: 12px; background: #1a73e8; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span>📷</span> Open Camera
-        </button>
-        <button type="button" onclick="document.getElementById('fileInput').click();" style="flex: 1; padding: 12px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span>📁</span> Browse Files
-        </button>
-    </div>
+<div style="background-color: #1a73e8; min-height: 100vh; padding: 20px 16px;">
 
-    <div id="map" style="height: 400px; width: 100%; margin-bottom: 15px; border-radius: 8px; border: 2px solid #2e7d32; z-index: 1;"></div>
-    
-    <form method="POST" enctype="multipart/form-data" id="wasteForm">
-        {% csrf_token %}
-        {{ form.latitude }}
-        {{ form.longitude }}
-        {{ form.location_address }}
-        
-        <div id="location-status-box" style="padding: 12px; border-radius: 5px; text-align: center; margin-bottom: 15px; background: #fff3cd; color: #856404; font-weight: bold; border: 1px solid #ffeeba; line-height: 1.4;">
-            🛰️ Establishing Precise OSM Connection...
+    <div style="max-width: 650px; margin: auto;">
+        <h1 style="color: #f5a623; text-align: center; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; font-size: 1.8em; line-height: 1.2;">
+            Report Waste Accumulation
+        </h1>
+
+        <div style="background: #0B132B; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); margin-bottom: 20px;">
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+                <button type="button" id="cameraStartBtn" onclick="startCamera()"
+                    style="flex: 1; padding: 14px 10px; background: #f5a623; color: #0B132B; border: none; border-radius: 50px; cursor: pointer; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9em;">
+                    <span style="font-size: 16px;">📷</span> OPEN CAMERA
+                </button>
+                <button type="button" onclick="document.getElementById('fileInput').click();"
+                    style="flex: 1; padding: 14px 10px; background: #ffffff; color: #1a73e8; border: none; border-radius: 50px; cursor: pointer; font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 0.9em;">
+                    <span style="font-size: 16px;">📁</span> BROWSE FILES
+                </button>
+            </div>
+
+            <div id="camera-area" style="display: none; position: relative; margin-bottom: 15px;">
+                <video id="video" width="100%" autoplay playsinline style="border-radius: 15px; border: 3px solid #f5a623;"></video>
+                <button type="button" onclick="takePhoto()"
+                    style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 25px; background: #2e7d32; color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+                    CAPTURE PHOTO
+                </button>
+            </div>
+
+            <div id="preview-area" style="display: none; text-align: center;">
+                <img id="image-result" src="" style="width: 100%; border-radius: 15px; border: 3px solid #ffffff; margin-bottom: 10px;">
+                <p style="color: #4caf50; font-weight: bold; font-size: 0.9em;">✅ Image Attached Successfully</p>
+            </div>
         </div>
 
-        <button type="submit" id="submitBtn" disabled style="width: 100%; padding: 15px; background: #2e7d32; color: white; border: none; border-radius: 5px; font-weight: bold; font-size: 1.1em; opacity: 0.6; cursor: not-allowed; transition: 0.3s;">
-            Upload Report
-        </button>
-    </form>
+        <div id="map" class="report-map" style="height: 320px; width: 100%; margin-bottom: 15px; border-radius: 20px; border: 4px solid #ffffff; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 1;"></div>
+
+        <form method="POST" enctype="multipart/form-data" id="wasteForm">
+            {% csrf_token %}
+            <input type="file" id="fileInput" name="image" accept="image/*" style="display: none;" onchange="handleFileSelect(this)">
+
+            {{ form.latitude }}
+            {{ form.longitude }}
+            {{ form.location_address }}
+
+            <div id="location-status-box" style="padding: 14px; border-radius: 15px; text-align: center; margin-bottom: 16px; background: rgba(255,255,255,0.95); color: #333; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 0.9em;">
+                🛰️ Establishing Precise GPS Connection...
+            </div>
+
+            <button type="submit" id="submitBtn" disabled
+                style="width: 100%; padding: 18px; background: #2e7d32; color: white; border: none; border-radius: 50px; font-weight: 900; font-size: 1.1em; opacity: 0.5; cursor: not-allowed; transition: 0.3s; text-transform: uppercase;">
+                Upload Report Now
+            </button>
+        </form>
+    </div>
 </div>
+
+<canvas id="hidden-canvas" style="display:none;"></canvas>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<script>
-    let map, marker, accuracyCircle, addressTimer;
+<style>
+    @media (max-width: 480px) {
+        .report-map {
+            height: 260px !important;
+            border-radius: 15px !important;
+        }
+        div[style*="background-color: #1a73e8"] {
+            padding: 14px 12px !important;
+        }
+        h1[style*="color: #f5a623"] {
+            font-size: 1.4em !important;
+            margin-bottom: 14px !important;
+        }
+    }
+</style>
 
-    // HIERARCHICAL ADDRESS LOGIC
+<script>
+    let map, marker, accuracyCircle, addressTimer, stream;
+
+    async function startCamera() {
+        const video = document.getElementById('video');
+        const cameraArea = document.getElementById('camera-area');
+        const previewArea = document.getElementById('preview-area');
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+            video.srcObject = stream;
+            cameraArea.style.display = 'block';
+            previewArea.style.display = 'none';
+        } catch (err) {
+            alert("Camera access denied or unavailable.");
+        }
+    }
+
+    function takePhoto() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('hidden-canvas');
+        const resultImg = document.getElementById('image-result');
+        const fileInput = document.getElementById('fileInput');
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        resultImg.src = dataUrl;
+
+        fetch(dataUrl).then(res => res.blob()).then(blob => {
+            const file = new File([blob], "captured_waste.jpg", { type: "image/jpeg" });
+            const container = new DataTransfer();
+            container.items.add(file);
+            fileInput.files = container.files;
+            stopCamera();
+            document.getElementById('camera-area').style.display = 'none';
+            document.getElementById('preview-area').style.display = 'block';
+            checkFormReady();
+        });
+    }
+
+    function stopCamera() {
+        if (stream) stream.getTracks().forEach(track => track.stop());
+    }
+
+    function handleFileSelect(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('image-result').src = e.target.result;
+                document.getElementById('preview-area').style.display = 'block';
+                document.getElementById('camera-area').style.display = 'none';
+                stopCamera();
+                checkFormReady();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
     async function getHierarchicalAddress(lat, lng) {
         try {
             const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`, {
-                headers: { 'User-Agent': 'KabaleWasteApp/v7-Hierarchical' }
+                headers: { 'User-Agent': 'KabaleWasteApp/v7' }
             });
             const data = await response.json();
             const a = data.address;
-
             let displayParts = [];
-            
-            // 1. SPECIFIC LANDMARK/BUILDING (e.g., Agric Faculty / Post Graduate Bldg)
-            if (a.amenity) displayParts.push(a.amenity); 
-            else if (a.building) displayParts.push(a.building);
-            else if (a.university) displayParts.push(a.university);
-
-            // 2. CELL/VILLAGE
-            if (a.village) displayParts.push(a.village + " Cell");
-            else if (a.suburb) displayParts.push(a.suburb + " Cell");
-
-            // 3. WARD
-            if (a.neighbourhood) displayParts.push(a.neighbourhood + " Ward");
-            else if (a.city_district) displayParts.push(a.city_district + " Ward");
-            
-            // 4. MUNICIPALITY
+            if (a.amenity || a.building || a.university) displayParts.push(a.amenity || a.building || a.university);
+            if (a.village || a.suburb) displayParts.push((a.village || a.suburb) + " Cell");
+            if (a.neighbourhood || a.city_district) displayParts.push((a.neighbourhood || a.city_district) + " Ward");
             displayParts.push("Kabale Municipality");
-
-            // Final string format: "Agric Faculty - Kamukira Cell - Ward"
             const finalString = displayParts.join(" - ");
-            
-            const addressInput = document.querySelector('[name="location_address"]');
-            if(addressInput) addressInput.value = finalString;
-            
+            document.querySelector('[name="location_address"]').value = finalString;
             return finalString;
         } catch (error) {
             return "Kabale Municipality Location";
@@ -79,65 +160,50 @@
 
     if (navigator.geolocation) {
         const statusBox = document.getElementById("location-status-box");
-        
         navigator.geolocation.watchPosition((position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
-
+            const { latitude: lat, longitude: lng, accuracy } = position.coords;
             document.querySelector('[name="latitude"]').value = lat;
             document.querySelector('[name="longitude"]').value = lng;
 
             if (!map) {
                 map = L.map('map').setView([lat, lng], 19);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 20,
-                    attribution: '© OSM'
-                }).addTo(map);
-
-                marker = L.marker([lat, lng], {draggable: true}).addTo(map);
-                accuracyCircle = L.circle([lat, lng], {radius: accuracy, color: '#2e7d32', fillOpacity: 0.1}).addTo(map);
-                
-                marker.on('dragend', function() {
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20 }).addTo(map);
+                marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+                accuracyCircle = L.circle([lat, lng], { radius: accuracy, color: '#f5a623', fillOpacity: 0.1 }).addTo(map);
+                marker.on('dragend', function () {
                     const pos = marker.getLatLng();
                     document.querySelector('[name="latitude"]').value = pos.lat;
                     document.querySelector('[name="longitude"]').value = pos.lng;
                     getHierarchicalAddress(pos.lat, pos.lng);
-                    accuracyCircle.setLatLng(pos);
-                    accuracyCircle.setRadius(15); 
                 });
             } else {
                 marker.setLatLng([lat, lng]);
-                accuracyCircle.setLatLng([lat, lng]);
-                accuracyCircle.setRadius(accuracy);
+                accuracyCircle.setLatLng([lat, lng]).setRadius(accuracy);
                 if (accuracy < 35) map.setView([lat, lng]);
             }
 
-            if (accuracy < 30) {
-                statusBox.style.background = "#d4edda";
-                statusBox.style.color = "#155724";
-                statusBox.innerHTML = `✅ Precise Location Locked (${Math.round(accuracy)}m)`;
-            } else {
-                statusBox.innerHTML = `🛰️ Finding Specific Building... (Current: ${Math.round(accuracy)}m)`;
-            }
+            statusBox.style.background = accuracy < 30 ? "#d4edda" : "#fff3cd";
+            statusBox.innerHTML = accuracy < 30
+                ? `✅ Precise Location Locked (${Math.round(accuracy)}m)`
+                : `🛰️ Refining Location... (${Math.round(accuracy)}m)`;
 
             clearTimeout(addressTimer);
             addressTimer = setTimeout(async () => {
-                const detailedLabel = await getHierarchicalAddress(lat, lng);
-                statusBox.innerHTML += `<br><small style="font-weight:normal;">${detailedLabel}</small>`;
+                const label = await getHierarchicalAddress(lat, lng);
+                statusBox.innerHTML += `<br><small style="font-weight:normal;">${label}</small>`;
                 checkFormReady();
             }, 1000);
 
-        }, (err) => { statusBox.innerHTML = "❌ GPS Error. Please enable Location."; }, 
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+        }, null, { enableHighAccuracy: true });
     }
 
     function checkFormReady() {
         const lat = document.querySelector('[name="latitude"]').value;
+        const file = document.getElementById('fileInput').files.length;
         const btn = document.getElementById("submitBtn");
-        if (lat) { 
-            btn.disabled = false; 
-            btn.style.opacity = "1"; 
+        if (lat && file > 0) {
+            btn.disabled = false;
+            btn.style.opacity = "1";
             btn.style.cursor = "pointer";
         }
     }

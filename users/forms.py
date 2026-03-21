@@ -51,3 +51,36 @@ class WasteReportForm(forms.ModelForm):
                 'style': 'display:none;'
             }),
         }
+
+
+
+class AdminRegistrationForm(UserCreationForm):
+    full_name = forms.CharField(label="Full Name", max_length=100)
+    email = forms.EmailField(label="Email Address")
+    # Secret key to prevent public admin self-registration
+    secret_key = forms.CharField(
+        label="Admin Secret Key",
+        widget=forms.PasswordInput,
+        help_text="Contact the system owner for this key."
+    )
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = UserCreationForm.Meta.fields + ('full_name', 'email')
+
+    def clean_secret_key(self):
+        from django.conf import settings
+        key = self.cleaned_data.get('secret_key')
+        if key != settings.ADMIN_REGISTRATION_KEY:
+            raise forms.ValidationError("Invalid secret key. Access denied.")
+        return key
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.full_name = self.cleaned_data['full_name']
+        user.email = self.cleaned_data['email']
+        user.is_staff = True
+        user.is_superuser = True
+        if commit:
+            user.save()
+        return user        

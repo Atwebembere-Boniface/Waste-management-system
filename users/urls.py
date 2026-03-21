@@ -24,5 +24,9 @@ urlpatterns = [
     path('resident/dashboard/', views.ResidentDashboardView.as_view(), name='resident_dashboard'),
     path('reports/resident/dashboard/', views.ResidentDashboardView.as_view(), name='reports_resident_dashboard'),
     path('waste/update/<int:pk>/', views.ToggleWasteStatusView.as_view(), name='update_waste_status'),
-    
-]
+    # Add these to your urlpatterns list
+    path('messages/inbox/', views.AdminInboxView.as_view(), name='admin_inbox'),
+    path('messages/send/<int:report_id>/', views.SendMessageView.as_view(), name='send_message'),
+    path('messages/reply/<int:report_id>/', views.AdminReplyMessageView.as_view(), name='admin_reply_message'),
+    path('admin-register/', views.AdminRegisterView.as_view(), name='admin_register'),
+    ]
