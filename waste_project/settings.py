@@ -11,7 +11,7 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '.onrender.com',   # covers all your Render subdomains
+    '.onrender.com',
 ]
 
 # ── Installed Apps ─────────────────────────────────────────
@@ -24,14 +24,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'cloudinary',
     'cloudinary_storage',
-    'users',    # your apps
+    'users',
     'reports',
 ]
 
 # ── Middleware ─────────────────────────────────────────────
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # serves static files
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -40,8 +40,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# ── URL & WSGI ─────────────────────────────────────────────
+# These two lines were missing — they are what caused the ROOT_URLCONF error
+ROOT_URLCONF = 'waste_project.urls'
+WSGI_APPLICATION = 'waste_project.wsgi.application'
+
 # ── Database ───────────────────────────────────────────────
-# Uses PostgreSQL on Render, SQLite locally
 DATABASES = {
     'default': dj_database_url.config(
         default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
@@ -54,14 +58,25 @@ AUTH_USER_MODEL = 'users.User'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+# ── Internationalisation ───────────────────────────────────
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'Africa/Kampala'
+USE_I18N = True
+USE_TZ = True
+
 # ── Static files ───────────────────────────────────────────
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ── Media files via Cloudinary ─────────────────────────────
-# This is the KEY section — all uploaded images go to Cloudinary,
-# not the local filesystem, so they persist and are accessible via URL
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
@@ -82,6 +97,10 @@ ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL')
 
 # ── Admin registration key ─────────────────────────────────
 ADMIN_REGISTRATION_KEY = os.environ.get('ADMIN_REGISTRATION_KEY', 'KabaleAdmin2026!')
+
+# ── Primary key default type ───────────────────────────────
+# Fixes the W042 warnings you saw in the build logs
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── Templates ──────────────────────────────────────────────
 TEMPLATES = [
