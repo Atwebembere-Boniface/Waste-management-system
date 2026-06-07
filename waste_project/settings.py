@@ -41,7 +41,6 @@ MIDDLEWARE = [
 ]
 
 # ── URL & WSGI ─────────────────────────────────────────────
-# These two lines were missing — they are what caused the ROOT_URLCONF error
 ROOT_URLCONF = 'waste_project.urls'
 WSGI_APPLICATION = 'waste_project.wsgi.application'
 
@@ -74,16 +73,26 @@ USE_TZ = True
 # ── Static files ───────────────────────────────────────────
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static'] 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# ── Media files via Cloudinary ─────────────────────────────
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-MEDIA_URL = '/media/'
+# ── Media / File Storage ───────────────────────────────────
+# In development: store files locally so you can view them without Cloudinary credentials.
+# In production (DEBUG=False): use Cloudinary for persistent cloud storage.
+if DEBUG:
+    # Local file storage for development
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
+else:
+    # Cloudinary for production
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+        'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+        'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+    }
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = '/media/'
 
 # ── Email ──────────────────────────────────────────────────
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -99,7 +108,6 @@ ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL')
 ADMIN_REGISTRATION_KEY = os.environ.get('ADMIN_REGISTRATION_KEY', 'KabaleAdmin2026!')
 
 # ── Primary key default type ───────────────────────────────
-# Fixes the W042 warnings you saw in the build logs
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ── Templates ──────────────────────────────────────────────
